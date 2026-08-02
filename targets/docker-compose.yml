@@ -1,0 +1,22 @@
+# VAmPI (github.com/erev0s/VAmPI) run in both configurations at once.
+# The `vulnerable` flag is VAmPI's own global switch. Running both gives
+# matched vulnerable / protected pairs over identical endpoints, which is
+# what makes false-positive measurement possible without modifying the target.
+services:
+  vampi-secure:
+    image: erev0s/vampi:latest
+    container_name: vampi-secure
+    ports:
+      - "127.0.0.1:5001:5000"
+    environment:
+      - vulnerable=0
+      - tokentimetolive=3600
+
+  vampi-vulnerable:
+    image: erev0s/vampi:latest
+    container_name: vampi-vulnerable
+    ports:
+      - "127.0.0.1:5002:5000"
+    environment:
+      - vulnerable=1
+      - tokentimetolive=3600
