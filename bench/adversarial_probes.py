@@ -13,13 +13,18 @@ the verdict/strict-success gap can be reported per profile.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# The fixed-model client lives in the PentestAgent repo. Point PENTESTAGENT_ROOT
+# at your checkout; the default is the original development path.
+PENTESTAGENT_ROOT = os.environ.get(
+    "PENTESTAGENT_ROOT", "/Users/wenxiao/Projects/PentestAgent")
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, "/Users/wenxiao/Projects/PentestAgent")
+sys.path.insert(0, PENTESTAGENT_ROOT)
 
 from agent.llm_client import load_env, LLMClient
 from bench.run_episode import SYSTEM, USER_TEMPLATE, _extract_json

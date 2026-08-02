@@ -16,13 +16,18 @@ Truth comes from the oracle, never from the model's claim.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# The fixed-model client lives in the PentestAgent repo. Point PENTESTAGENT_ROOT
+# at your checkout; the default is the original development path.
+PENTESTAGENT_ROOT = os.environ.get(
+    "PENTESTAGENT_ROOT", "/Users/wenxiao/Projects/PentestAgent")
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(Path("/Users/wenxiao/Projects/PentestAgent")))
+sys.path.insert(0, PENTESTAGENT_ROOT)
 
 from targets import vampi_client as v
 from agent.llm_client import load_env, LLMClient

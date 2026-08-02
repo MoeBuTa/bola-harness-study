@@ -38,8 +38,25 @@ python3 bench/adversarial_probes.py                         # 7B vs six profiles
 docker compose -f targets/docker-compose.yml down
 ```
 
-The model API is read from `PentestAgent/.env`
-(`OPENAI_API_KEY`, `OPENAI_BASE_URL`, model `WhiteRabbitNeo-V3-7B`).
+### Configuration
+
+The fixed-model client is imported from the `PentestAgent` repository. Point
+`PENTESTAGENT_ROOT` at your checkout if it is not at the default path:
+
+```bash
+export PENTESTAGENT_ROOT=/path/to/PentestAgent
+```
+
+Credentials are read from `$PENTESTAGENT_ROOT/.env` and never stored here:
+
+| Variable | Purpose |
+|----------|---------|
+| `OPENAI_API_KEY` | required for model-backed runs |
+| `OPENAI_BASE_URL` | OpenAI-compatible endpoint |
+| `MODEL_NAME` | defaults to `WhiteRabbitNeo-V3-7B` |
+
+Requires Docker and Python 3.11+. `runs/` is git-ignored, so no episode output
+or secret value is ever committed.
 
 ## Pilot results (2026-08-02)
 
