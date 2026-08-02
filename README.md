@@ -14,20 +14,64 @@ variants under comparison are the student deliverable.
 VAmPI (github.com/erev0s/VAmPI) ships a global `vulnerable=0/1` switch, so the
 **same endpoint** yields a matched protected / vulnerable pair. That matched
 pair is what makes false-positive measurement possible without modifying the
-target. The BOLA case: a book carries a per-owner `secret`; reading another
-user's book returns the secret when vulnerable and 404s when secure.
+target.
+
+It carries two object-level authorization targets that this study uses, both
+verified against the running app:
+
+| Target | Unauthorized attempt | Kind | Privileged oracle |
+|--------|----------------------|------|-------------------|
+| `GET /books/v1/{title}` | an outsider reads another user's private book | read | the victim's `secret` appears with victim provenance |
+| `PUT /users/v1/{name}/password` | an outsider sets another user's password | write | the victim logs in with the attacker-set password |
+
+With `vulnerable=1` the outsider succeeds; with `vulnerable=0` the read 404s and
+the write is scoped to the caller. The read oracle checks a planted canary and
+its provenance; the write oracle is a read-back, a fresh login with the new
+password.
+
+## Test cases: two targets, six response behaviours
+
+The switch supplies two of the six behaviours directly (a clean disclosure and a
+concealed denial). A thin response-shaping layer, sitting in front of the
+unmodified app, produces the other four by editing the reply body while leaving
+the authorization decision to VAmPI:
+
+| Behaviour | Source | Correct verdict |
+|-----------|--------|-----------------|
+| vulnerable-clean | target, switch on | positive |
+| vulnerable-noisy | shaping layer | positive |
+| protected-explicit | shaping layer | negative |
+| protected-concealed | target, switch off | negative |
+| misleading-200 | shaping layer | negative |
+| oracle-confounder (reflected / partial-write) | shaping layer | negative |
+
+What is authored is a set of response bodies. The application under test stays
+the third party's code.
 
 ## Layout
 
 ```
 targets/
   docker-compose.yml   two VAmPI instances: secure :5001, vulnerable :5002
-  vampi_client.py      driver + privileged victim-canary oracle + self-check
+  vampi_client.py      driver + privileged oracle (canary + read-back) + self-check
 study/
   run_episode.py       one live episode per instance, scored by the oracle
-  adversarial_probes.py six response profiles the live target cannot emit
+  adversarial_probes.py the six response behaviours fed to the fixed model
 runs/                  saved jsonl (git-ignored)
 ```
+
+## What the students build
+
+This repository is the provided setting: the two targets, the oracle, and a
+working pilot. The harness variants under comparison are the student
+deliverable:
+
+- **V1** schema only, **V2** adds a prompted condition ledger, **V3** adds a
+  semantic evidence check, all with one matched repair budget.
+- **B0** a deterministic rule-based controller, **B1** a status-code heuristic.
+
+Full research design, metrics, and the eight-week work plan are in the project
+guide (see the last section).
 
 ## Run
 
