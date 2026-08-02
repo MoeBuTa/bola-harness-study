@@ -27,7 +27,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, PENTESTAGENT_ROOT)
 
 from agent.llm_client import load_env, LLMClient
-from bench.run_episode import SYSTEM, USER_TEMPLATE, _extract_json
+from study.run_episode import SYSTEM, USER_TEMPLATE, _extract_json
 
 
 # (name, http status, response body, truth, note)
